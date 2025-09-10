@@ -2,33 +2,45 @@
 
 ## **Overview**
 
-In this assignment, you will implement the **Task Manager API** using the Python **FastAPI** web framework and **SQLite**. Your API must support CRUD operations (`GET`, `POST`, `PUT`, `DELETE`) for managing tasks. Your implementation will be graded automatically based on the results of the provided `pytest` tests, which will be run in **GitHub Actions** to ensure that your implementation works correctly on the `main` branch.
+Implement a Task Manager API using FastAPI and SQLite, then containerize it with Docker. The assignment is graded holistically based on API functionality and containerization.
 
 ---
 
-## **Grading Rubric**
+## **Grading Rubric - Total Score: 15 Points**
 
-Each test case is worth **3 points**. The total score for the assignment is **15 points**.
+### **API Implementation Tests (10 Points)**
+Each API test is worth **2 points**:
 
 | **Test Name**     | **Description**                                | **Points** |
 |-------------------|-------------------------------------------------|------------|
-| `test_read_root`  | Tests the root endpoint (`GET /`).               | 3 points   |
-| `test_create_task`| Tests creating a task (`POST /tasks/`).          | 3 points   |
-| `test_get_tasks`  | Tests retrieving all tasks (`GET /tasks/`).      | 3 points   |
-| `test_update_task`| Tests updating a task (`PUT /tasks/{task_id}/`). | 3 points   |
-| `test_delete_task`| Tests deleting a task (`DELETE /tasks/{task_id}/`). | 3 points   |
+| `test_read_root`  | Tests the root endpoint (`GET /`).               | 2 points   |
+| `test_create_task`| Tests creating a task (`POST /tasks/`).          | 2 points   |
+| `test_get_tasks`  | Tests retrieving all tasks (`GET /tasks/`).      | 2 points   |
+| `test_update_task`| Tests updating a task (`PUT /tasks/{task_id}/`). | 2 points   |
+| `test_delete_task`| Tests deleting a task (`DELETE /tasks/{task_id}/`). | 2 points   |
+
+### **Docker Containerization (5 Points)**
+All-or-nothing Docker implementation:
+
+| **Component**          | **Requirements**                               | **Points** |
+|------------------------|------------------------------------------------|------------|
+| **Complete Docker Implementation** | Multi-stage Dockerfile builds successfully, container runs on port 8000, all API endpoints work in container, follows best practices (.dockerignore, non-root user), tests run in container | 5 points   |
 
 ---
 
-## **Total Score: 15 Points**
+## **Scoring**
 
-Your score will be based on the number of tests passed:
-- **5/5 tests passed:** 15 points
-- **4/5 tests passed:** 12 points
-- **3/5 tests passed:** 9 points
-- **2/5 tests passed:** 6 points
-- **1/5 tests passed:** 3 points
-- **0/5 tests passed:** 0 points
+**API Tests (10 points):**
+- 5/5 tests passed: 10 points
+- 4/5 tests passed: 8 points  
+- 3/5 tests passed: 6 points
+- 2/5 tests passed: 4 points
+- 1/5 tests passed: 2 points
+- 0/5 tests passed: 0 points
+
+**Docker (5 points):**
+- Complete working Docker implementation: 5 points
+- Docker build fails or container doesn't work: 0 points
 
 ---
 
@@ -92,40 +104,68 @@ Your score will be based on the number of tests passed:
 
 ---
 
-## **Running the Tests Locally**
+## **Automated Grading with GitHub Actions**
 
-### **Run All Tests**
-To run all tests inside the Vagrant environment:
-```bash
-pytest tests/ --maxfail=1 --disable-warnings
-```
+Your assignment will be **automatically graded** using **GitHub Actions** when you push to any branch. The grading workflow performs:
 
-### **Run a Specific Test**
-To run a specific test, use:
-```bash
-pytest -k "test_create_task"
-```
+### **API Testing (10 points)**
+- Runs all 5 pytest unit tests
+- Each passing test awards 2 points
+- Tests run in a clean Python 3.12 environment with uv
+
+### **Docker Testing (5 points)** 
+- Builds your multi-stage Dockerfile
+- Starts the container on port 8000
+- Tests all API endpoints with curl commands
+- Verifies container follows best practices
+
+### **Viewing Your Grade**
+
+1. **Push your code to GitHub**:
+   ```bash
+   git add .
+   git commit -m "Implement API and Docker"
+   git push origin main
+   ```
+
+2. **Check GitHub Actions**:
+   - Navigate to your repository
+   - Click the [**Actions**](images/github_actions_tab.png) tab
+   - View the latest workflow run
+
+3. **Successful run** looks like [this](images/successful_action.png)
+
+**Your final grade will be determined by the GitHub Actions results on your latest push to the main branch.**
 
 ---
 
-## **Automated Testing in GitHub Actions**
+## **Running Tests Locally (Before Submission)**
 
-Your code will be automatically tested using **GitHub Actions** when you push to the `main` or any development branch. Follow these steps to ensure your tests pass:
-
-### **1. Commit and Push Code**
-Ensure your changes are committed and pushed to GitHub:
+### **API Tests**
 ```bash
-git add .
-git commit -m "Implemented CRUD endpoints"
-git push origin main
+# Activate virtual environment  
+source .venv/bin/activate
+
+# Run all tests
+pytest tests/unit/test_server.py -v
+
+# Run specific test
+pytest tests/unit/test_server.py::test_create_task -v
 ```
 
-### **2. Check GitHub Actions**
-1. Navigate to your GitHub repository.
-2. Click the [**Actions**](images/github_actions_tab.png) tab.
-3. Review the latest workflow run to see if your tests [passed](images/successful_action.png).
+### **Docker Tests**
+```bash
+# Build and test container
+docker build -t task-manager .
+docker run -d -p 8000:8000 --name test-container task-manager
 
-If your tests fail, click on the failed job to see the detailed error logs.
+# Test endpoints
+curl http://localhost:8000/
+curl http://localhost:8000/tasks/
+
+# Cleanup
+docker stop test-container && docker rm test-container
+```
 
 ---
 
@@ -179,11 +219,11 @@ curl -X DELETE "http://localhost:8000/tasks/1/" -H "accept: application/json"
 - Do **NOT** modify the `tests.py` file. Any modifications to the test file will result in a **0 score**.
 - Ensure all dependencies are installed using:
   ```bash
-  poetry install --with=dev
+  uv pip install -e .
   ```
 - If you encounter `ModuleNotFoundError`, set the `PYTHONPATH`:
   ```bash
-  export PYTHONPATH="/home/vagrant/app"
+  export PYTHONPATH=.
   ```
 
 ---
