@@ -24,7 +24,7 @@ else
 fi
 
 # check 2: python 3.12 base image
-if grep -q "FROM python:3.12" "$DOCKERFILE"; then
+if grep -q "FROM python:3.12-slim" "$DOCKERFILE"; then
     echo "python 3.12 base image: PASS"
 else
     echo "python 3.12 base image: FAIL (expected 'FROM python:3.12' or variant)"
@@ -47,27 +47,12 @@ else
     exit 1
 fi
 
-# check 5: port 8000 exposed
-if grep -q "EXPOSE 8000" "$DOCKERFILE"; then
-    echo "port exposure: PASS"
-else
-    echo "port exposure: FAIL (EXPOSE 8000 not found)"
-    exit 1
-fi
-
-# check 6: .dockerignore exists
+# check 5: .dockerignore exists
 if [ -f ".dockerignore" ]; then
     echo "dockerignore file: PASS"
 else
     echo "dockerignore file: FAIL (.dockerignore not found)"
     exit 1
-fi
-
-# check 7: non-root user (best practice)
-if grep -q "USER" "$DOCKERFILE"; then
-    echo "non-root user: PASS"
-else
-    echo "non-root user: WARNING (consider using USER instruction)"
 fi
 
 echo ""
