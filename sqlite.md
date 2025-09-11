@@ -40,6 +40,7 @@ INSERT INTO tasks (title, description, completed) VALUES (?, ?, ?)
 **Python Code Example:**
 ```python
 from cc_simple_server.database import get_db_connection 
+from cc_simple_server.models import TaskRead
 ...
 conn = get_db_connection()
 cursor = conn.cursor()
@@ -48,8 +49,17 @@ cursor.execute(
     (task_data.title, task_data.description, task_data.completed),
 )
 conn.commit()
-...
+
+# get the id of the newly created task
+task_id = cursor.lastrowid
+
+# fetch the created task to return it
+cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+row = cursor.fetchone()
 conn.close()
+
+# convert database row to taskread object
+return TaskRead(**dict(row))
 ```
 
 ### **2. Retrieve All Tasks (`GET /tasks/`)**
@@ -62,15 +72,19 @@ SELECT * FROM tasks
 **Python Code Example:**
 ```python
 from cc_simple_server.database import get_db_connection 
+from cc_simple_server.models import TaskRead
 ...
 conn = get_db_connection()
 cursor = conn.cursor()
 cursor.execute("SELECT * FROM tasks")
 rows = cursor.fetchall()
-...
 conn.close()
+
+# convert database rows to taskread objects
+return [TaskRead(**dict(row)) for row in rows]
 ```
 - `fetchall()` returns all rows as a list of dictionaries.
+- Convert each row to a `TaskRead` object for proper API response format.
 
 ### **3. Update a Task (`PUT /tasks/{task_id}/`)**
 To update an existing task by its ID, use the `UPDATE` SQL query:
@@ -82,16 +96,34 @@ UPDATE tasks SET title = ?, description = ?, completed = ? WHERE id = ?
 
 **Python Code Example:**
 ```python
+from fastapi import HTTPException
 from cc_simple_server.database import get_db_connection 
+from cc_simple_server.models import TaskRead
 ...
 conn = get_db_connection()
 cursor = conn.cursor()
+
+# first, check if the task exists
+cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+existing_task = cursor.fetchone()
+if not existing_task:
+    conn.close()
+    raise HTTPException(status_code=404, detail="Task not found")
+
+# update the task
 cursor.execute(
     "UPDATE tasks SET title = ?, description = ?, completed = ? WHERE id = ?",
     (task_data.title, task_data.description, task_data.completed, task_id),
 )
-...
 conn.commit()
+
+# fetch the updated task
+cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+updated_row = cursor.fetchone()
+conn.close()
+
+# return the updated task
+return TaskRead(**dict(updated_row))
 ```
 
 ### **4. Delete a Task (`DELETE /tasks/{task_id}/`)**
@@ -103,20 +135,60 @@ DELETE FROM tasks WHERE id = ?
 
 **Python Code Example:**
 ```python
+from fastapi import HTTPException
 from cc_simple_server.database import get_db_connection 
 ...
 conn = get_db_connection()
 cursor = conn.cursor()
+
+# first, check if the task exists
+cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+existing_task = cursor.fetchone()
+if not existing_task:
+    conn.close()
+    raise HTTPException(status_code=404, detail="Task not found")
+
+# delete the task
 cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
-...
 conn.commit()
+conn.close()
+
+# return success message
+return {"message": f"Task {task_id} deleted successfully"}
 ```
+
+---
+
+## **HTTP Status Codes and Error Handling**
+
+### **HTTP Status Codes:**
+- **200 OK**: Successful GET, PUT, DELETE operations
+- **404 Not Found**: Task with specified ID does not exist
+- **500 Internal Server Error**: Database or server errors (handled automatically by FastAPI)
+
+### **Error Handling Pattern:**
+```python
+from fastapi import HTTPException
+
+# check if task exists before update/delete operations
+cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+if not cursor.fetchone():
+    conn.close()
+    raise HTTPException(status_code=404, detail="Task not found")
+```
+
+### **Key Points:**
+- **Always check existence**: Before updating or deleting, verify the task exists
+- **Close connections**: Always close database connections, especially in error cases
+- **Use HTTPException**: Raises proper HTTP error responses
+- **Parameterized queries**: Always use `?` placeholders to prevent SQL injection
 
 ---
 
 ## **Additional Tips:**
 - **Database Connection:** Ensure that each database connection (`conn`) is properly closed after executing queries to avoid resource leaks.
 - **Transactions:** The `conn.commit()` call is used to save changes (insert, update, delete). Without `commit()`, the changes will not be saved.
+- **Row Factory:** The database connection uses `sqlite3.Row` factory, allowing access to columns by name and conversion to dictionaries with `dict(row)`.
 
 ---
 

@@ -36,10 +36,12 @@ uv --version
    cd cc-simple-server
    ```
 
-2. **Create virtual environment**:
+2. **Create virtual environment and install dependencies**:
    ```bash
-   python3.12 -m venv .venv
+   uv sync
    ```
+   
+   **Note**: `uv sync` automatically creates a `.venv` virtual environment (equivalent to `python3.12 -m venv .venv`) and installs all dependencies from `pyproject.toml` in one command.
 
 3. **Activate virtual environment**:
    ```bash
@@ -50,16 +52,9 @@ uv --version
    .venv\Scripts\activate
    ```
 
-4. **Install dependencies from pyproject.toml**:
+4. **Test the installation**:
    ```bash
-   uv pip install -e .
-   ```
-
-5. **Test the installation**:
-   ```bash
-   python -c "import fastapi; print('FastAPI installed successfully')"
-   python -c "import uvicorn; print('Uvicorn installed successfully')"
-   python -c "import pytest; print('Pytest installed successfully')"
+   python -c "import fastapi, uvicorn, pytest; print('All dependencies installed successfully')"
    ```
 
 ## **Development Workflow**
@@ -85,17 +80,10 @@ uv --version
 Run these commands to verify everything works:
 
 ```bash
-# 1. Test that the server starts
-uvicorn cc_simple_server.server:app --host 127.0.0.1 --port 8000 &
-SERVER_PID=$!
+# 1. Test that dependencies are installed correctly
+python -c "import fastapi, uvicorn, pytest; print('All dependencies installed successfully')"
 
-# 2. Test the root endpoint (in another terminal)
-curl http://localhost:8000/
-
-# 3. Stop the test server
-kill $SERVER_PID
-
-# 4. Run unit tests
+# 2. Run a basic test to verify the project structure
 pytest tests/unit/test_server.py::test_read_root -v
 ```
 
@@ -119,14 +107,15 @@ pytest tests/unit/test_server.py -v
 # Run specific test
 pytest tests/unit/test_server.py::test_create_task -v
 
-# Add PYTHONPATH if needed
-PYTHONPATH=. pytest tests/unit/test_server.py -v
+# If you get import errors, ensure virtual environment is activated
+source .venv/bin/activate
+pytest tests/unit/test_server.py -v
 ```
 
 ## **Troubleshooting**
 
 - **Virtual environment not activated**: Always run `source .venv/bin/activate` first
-- **Module not found errors**: Ensure you're in the virtual environment and dependencies are installed
-- **Port 8000 in use**: Use `--port 8001` or kill existing processes
+- **Module not found errors**: Ensure you're in the virtual environment and ran `uv sync`
+- **Port 8000 in use**: Use `--port 8001` or kill existing processes  
 - **Permission errors**: On Linux/macOS, you may need `python3.12` instead of `python`
-- **Import errors during testing**: Try `PYTHONPATH=. pytest` to ensure Python can find your modules
+- **uv not found**: Make sure uv is installed and in your PATH after installation
